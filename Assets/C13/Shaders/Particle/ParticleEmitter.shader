@@ -1,4 +1,4 @@
-﻿Shader "Unlit/ParticleUpdater"
+﻿Shader "Unlit/ParticleEmitter"
 {
 	Properties
 	{
@@ -115,19 +115,17 @@
 				pos = tex2D(_Pos, i.uv),
 				col = tex2D(_Col, i.uv);
 			float life = pos.w;
-			if(life < 0){
+			if(life < 0 && frac(abs(life))<_EmitRate*unity_DeltaTime.x){
+				half2 uv = i.uv;
 			// 	uv = frac(uv+float2(frac(_Time.y*_Pos_TexelSize.z),_Time.y));
-				life -= unity_DeltaTime.x;
+			// 	life -= unity_DeltaTime.x;
 			// 	col = half4(i.uv.y+i.uv.x/_Pos_TexelSize.z,0,0,1);
 			// 	float emission = uv.y;
-				float emission = tex2D(_NoiseTex, float2(i.uv.x*2,0.5)*3)+0.5*tex2D(_NoiseTex, float2(i.uv.x*4,0.75))+0.25*tex2D(_NoiseTex, float2(i.uv.x*8,0.25));
-				if(frac(abs(life))<_EmitRate*unity_DeltaTime.x*(emission+1))
-				{
-					col = .8;
-					life = _Life*rand(i.uv+_Time.yx);
-					pos.xyz = fullPos(float2(i.uv.x,0.99),50);
-					vel = 0;
-				}
+				// if(emission > 0){
+					col = 0.5;
+					life = _Life*rand(uv+_Time.yx);
+					pos.xyz = fullPos(float2(uv.x,0.5)+length(i.uv-0.5)*normalize(i.uv-0.5)*0.01,50);
+				// }
 			}
 			
 			pOut o;
@@ -152,8 +150,8 @@
 			
 			float4
 				flow = tex2D(_FlowTex, uv);
-			vel.z -= 9.8*unity_DeltaTime.x;
-			// vel.z *= 1-unity_DeltaTime.x;
+			vel.xy = flow.xy*_Sepa;
+			vel.z = -5;
 			
 			pos.xyz += vel.xyz*unity_DeltaTime.x * saturate(pos.w);
 			pos.w -= unity_DeltaTime.x;
@@ -169,21 +167,15 @@
 			float4
 				vel = tex2D(_Vel, i.uv),
 				pos = tex2D(_Pos, i.uv),
-				col = tex2D(_Col, i.uv);
+				col = tex2D(_Col, i.uv),
+				n1 = tex2D(_NoiseTex, pos.xy*_Scale),
+				n2 = tex2D(_NoiseTex, pos.xy*_Scale*2.0),
+				n3 = tex2D(_NoiseTex, pos.xy*_Scale*4.0);
+			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
 			float life = pos.w;
 			
-			float3
-				cp = cPos(pos.xyz),
-				right = normalize(_Cam1_W2C[0].xyz),
-				up = normalize(_Cam1_W2C[1].xyz);
-			float4
-				n1 = tex2D(_NoiseTex, cp.xy*_Scale),
-				n2 = tex2D(_NoiseTex, cp.xy*_Scale*2.0),
-				n3 = tex2D(_NoiseTex, cp.xy*_Scale*4.0);
-			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
-			
 			curl *= _Speed;
-			pos.xyz += (curl.x*right+curl.y*up)*unity_DeltaTime.x * saturate(pos.w);
+			pos.xy += curl*unity_DeltaTime.x * saturate(pos.w);
 			pos.z += curl.z*unity_DeltaTime.x;
 			
 			pOut o;

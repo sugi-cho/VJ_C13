@@ -23,13 +23,13 @@
 			return o;
 		}
 		
-		uniform sampler2D _CompTex;
+		uniform sampler2D _CompTex,_FlowTex;
 		sampler2D _MainTex;
 
 		half4 frag (v2f i) : SV_Target
 		{
 			half4 col = tex2D(_CompTex, i.uv);
-			return half4(col.r>0.5, float3(1,1,1)*(i.uv.y < col.r));
+			return col;
 		}
 	ENDCG
 	SubShader

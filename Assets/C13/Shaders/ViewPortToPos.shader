@@ -37,6 +37,7 @@
 			
 			float3 clipToLocal(float4 clipPos){
 				float4 viewPos = mul(unity_CameraInvProjection, clipPos);
+				viewPos.w = 1;
 				return mul(viewPos, UNITY_MATRIX_IT_MV).xyz;
 			}
 			
@@ -45,12 +46,11 @@
 				float n = _ProjectionParams.y;
 				float f = _ProjectionParams.z;
 				
-				float4 clipPosN = float4(n*(2*_VP.xy-1),-n,n);
-				float4 clipPosF = float4(f*(2*_VP.xy-1), f,f);
-				
-				float3 localN = clipToLocal(clipPosN);
-				float3 localF = clipToLocal(clipPosF);
-				float3 localPos = lerp(localN,localF,(_VP.z-n)/(f-n));
+				float w = _VP.z;
+				float z = w * (2*(w-n)/(f-n)-1);
+				float2 xy = w * (2*_VP.xy-1);
+				float4 clipPos = float4(xy,z,w);
+				float3 localPos = clipToLocal(clipPos);
 				
 				v.vertex.xyz += localPos;
 				

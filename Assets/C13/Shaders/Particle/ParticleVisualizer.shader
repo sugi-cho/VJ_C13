@@ -55,8 +55,8 @@
 			
 			v.vertex.xyz = pos.xyz;
 			float4 vPos = mul(UNITY_MATRIX_V, v.vertex);
-			if(id < numParticles)
-				vPos.xy -= v.uv-0.5;
+			if(id < numParticles && pos.w > 0)
+				vPos.xy -= (v.uv-0.5)*_Size*_Sepa;
 			else
 				vPos.xyz = 0;
 			v.color = col;
@@ -73,7 +73,7 @@
 		{
 			float2 uv = i.uv;
 			uv -= 0.5;
-			uv *= lerp(1.0,_Sepa,saturate(i.life*0.5));
+			uv *= _Sepa;
 			uv += 0.5;
 			uv = saturate(uv);
 			
