@@ -10,11 +10,9 @@ public class AudioInput : MonoBehaviour
 	public int numData = 256;
 	public float maxAmp = 1f;
 	public Material processMat;
-
 	[SerializeField]
 	RenderTexture[]
 		rts = new RenderTexture[2];
-
 	float offset;
 	float amp;
 	AudioSource aSource;
@@ -22,13 +20,16 @@ public class AudioInput : MonoBehaviour
 	// Use this for initialization
 	void Start ()
 	{
-		aSource = gameObject.AddComponent<AudioSource> ();
-		aSource.clip = Microphone.Start ("", true, 9999, 44100);
-		aSource.loop = true;
-		while (!(Microphone.GetPosition("")>0)) {
+		try {
+			aSource = gameObject.AddComponent<AudioSource> ();
+			aSource.clip = Microphone.Start ("", true, 10, 44100);
+			aSource.loop = true;
+			while (!(Microphone.GetPosition("")>0)) {
+			}
+			aSource.Play ();
+		} catch {
+			Debug.Log("error");
 		}
-		aSource.Play ();
-
 		spectrum = new float[numData];
 		audioTex = new Texture2D (numData, 1, TextureFormat.RGB24, false);
 
@@ -40,6 +41,7 @@ public class AudioInput : MonoBehaviour
 		for (var i = 0; i < rts.Length; i++) 
 			rts [i] = Extensions.CreateRenderTexture (numData, 512, rts [i]);
 	}
+
 	void SwapRts ()
 	{
 		var tmp = rts [0];
