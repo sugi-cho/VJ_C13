@@ -10,8 +10,6 @@
 	}
 	CGINCLUDE
 		#include "UnityCG.cginc"
-		#include "Assets/CGINC/Random.cginc"
-		#include "Assets/CGINC/BillBoardCommon.cginc"
 
 		struct appdata
 		{
@@ -27,6 +25,10 @@
 			float2 uv : TEXCOORD0;
 			half4 color : TEXCOORD1;
 			float life : TEXCOORD2;
+			float4 vCenter : TEXCOORD3;
+			float3 right : TEXCOORD4;
+			float3 up : TEXCOORD5;
+			float forward : TEXCOORD6;
 		};
 		
 		struct pOut
@@ -53,35 +55,55 @@
 			half4 vel = tex2Dlod(_Vel, float4(uv,0,0));
 			half4 col = tex2Dlod(_Col, float4(uv,0,0));
 			
+			v2f o;
+			
 			v.vertex.xyz = pos.xyz;
+			o.vCenter = v.vertex;
 			float4 vPos = mul(UNITY_MATRIX_V, v.vertex);
+			
 			if(id < numParticles && pos.w > 0)
-				vPos.xy -= (v.uv-0.5)*_Size*_Sepa;
+				vPos.xy -= (v.uv-0.5)*_Size;
 			else
 				vPos.xyz = 0;
 			v.color = col;
 			
-			v2f o;
 			o.vertex = mul(UNITY_MATRIX_P, vPos);
 			o.uv = TRANSFORM_TEX(v.uv, _MainTex);
 			o.color = v.color;
 			o.life = pos.w;
+			o.right = UNITY_MATRIX_V[0].xyz;
+			o.up = UNITY_MATRIX_V[1].xyz;
+			o.forward = UNITY_MATRIX_V[2].xyz;
 			return o;
 		}
 		
-		pOut frag (v2f i)
+		void frag (v2f i, 
+			out half4 outDiffuse : SV_Target0,
+			out half4 outSpecSmoothness : SV_Target1,
+			out half4 outNormal : SV_Target2,
+			out half4 outEmission : SV_Target3,
+			out half outDepth : SV_Depth) 
 		{
-			float2 uv = i.uv;
-			uv -= 0.5;
-			uv *= _Sepa;
-			uv += 0.5;
-			uv = saturate(uv);
+			half3 vNormal;
+			vNormal.xy = i.uv*2.0-1.0;
+			half r2 = dot(vNormal.xy, vNormal.xy);
+			if(r2 > 1.0)
+				discard;
+			vNormal.z = sqrt(1.0-r2);
 			
-			pOut o;
-			o.vis = tex2D(_MainTex, uv)*i.color;
-			o.kage = distance(float2(0.5,0.5),i.uv);
-			o.kage = saturate(0.25 - o.kage*o.kage)*0.1;
-			return o;
+			half4 vPos = half4(i.vCenter.xyz+vNormal*_Size, 1.0);
+			half4 cPos = mul(UNITY_MATRIX_P, vPos);
+			#if defined(SHADER_TARGET_GLSL)
+				outDepth = (cPos.z/cPos.w) * 0.5 + 0.5;
+			#else
+				outDepth = cPos.z/cPos.w;
+			#endif
+			if(outDepth <= 0)
+				discard;
+			
+			
+			
+			
 		}
 	ENDCG
 	SubShader
