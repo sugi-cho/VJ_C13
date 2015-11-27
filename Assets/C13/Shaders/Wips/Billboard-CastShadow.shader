@@ -60,7 +60,7 @@
 			out half outDepth : SV_Depth) 
 		{
 			half3 vNormal;
-			vNormal.xy = i.uv * 2 - 1;
+			vNormal.xy = i.uv * 2.0-1.0;
 			half r2 = dot(vNormal.xy, vNormal.xy);
 			if(r2 > 1.0)
 				discard;
@@ -80,11 +80,7 @@
 			outSpecSmoothness = _SC;
 			outNormal.xyz = normalize(vNormal.x*i.vRight + vNormal.y*i.vUp + vNormal.z*i.vForward);
 			outNormal = half4(outNormal.xyz*0.5+0.5,1);
-			outEmission = 10;
-			
-			#ifndef UNITY_HDR_ON
-				outEmission.rgb = exp2(-outEmission.rgb);
-			#endif
+			outEmission = 0;
 		}
 		
 		

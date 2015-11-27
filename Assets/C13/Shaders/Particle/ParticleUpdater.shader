@@ -116,17 +116,14 @@
 				col = tex2D(_Col, i.uv);
 			float life = pos.w;
 			if(life < 0){
-			// 	uv = frac(uv+float2(frac(_Time.y*_Pos_TexelSize.z),_Time.y));
 				life -= unity_DeltaTime.x;
-			// 	col = half4(i.uv.y+i.uv.x/_Pos_TexelSize.z,0,0,1);
-			// 	float emission = uv.y;
-				float emission = tex2D(_NoiseTex, float2(i.uv.x*2,0.5)*3)+0.5*tex2D(_NoiseTex, float2(i.uv.x*4,0.75))+0.25*tex2D(_NoiseTex, float2(i.uv.x*8,0.25));
-				if(frac(abs(life))<_EmitRate*unity_DeltaTime.x*(emission+1))
+				float emission = 1+tex2D(_NoiseTex, float2(i.uv.x*2,0.5)*3)+0.5*tex2D(_NoiseTex, float2(i.uv.x*4,0.75))+0.25*tex2D(_NoiseTex, float2(i.uv.x*8,0.25));
+				if(frac(abs(life))<_EmitRate*unity_DeltaTime.x*emission)
 				{
 					col = .8;
 					life = _Life*rand(i.uv+_Time.yx);
 					pos.xyz = fullPos(float2(i.uv.x,0.99),50);
-					vel = 0;
+					vel = half4(0,pow(1+i.uv.y+emission,0.5),0,0);
 				}
 			}
 			
@@ -152,8 +149,7 @@
 			
 			float4
 				flow = tex2D(_FlowTex, uv);
-			vel.z -= 9.8*unity_DeltaTime.x;
-			// vel.z *= 1-unity_DeltaTime.x;
+			vel.z -= 9.8*unity_DeltaTime.x*(0.7+i.uv.y*0.3);
 			
 			pos.xyz += vel.xyz*unity_DeltaTime.x * saturate(pos.w);
 			pos.w -= unity_DeltaTime.x;

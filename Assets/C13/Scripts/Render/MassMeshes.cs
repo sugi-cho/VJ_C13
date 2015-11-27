@@ -90,7 +90,7 @@ public class MassMeshes : MonoBehaviour
 		for (var i = 0; i < numDraw; i++) {
 			var mpBlock = Extensions.GetPropertyBlock ();
 			mpBlock.AddFloat ("_Offset", i * numInSingleMesh);
-			Graphics.DrawMesh (mesh, transform.position, transform.rotation, drawMat, 0, null, 0, mpBlock, reserveShadow, castShadow);
+			Graphics.DrawMesh (mesh, transform.position, transform.rotation, drawMat, 0, null, 0, mpBlock, castShadow, reserveShadow);
 		}
 	}
 
