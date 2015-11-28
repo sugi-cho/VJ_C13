@@ -5,8 +5,6 @@
 		_Scale ("curl scale", Float) = 0.1
 		_Speed ("curl speed", Float) = 1
 		_Life ("life time", Float) = 30
-		_Sepa ("separation", Float) = 1.0
-		_EmitRate ("particles per sec", Float) = 0.1
 	}
 	CGINCLUDE
 		#include "UnityCG.cginc"
@@ -47,19 +45,19 @@
 			_EmitTex;
 		half4 _Pos_TexelSize;
 		
-		uniform float4x4 _Cam1_W2C,_Cam1_W2S,_Cam1_S2C,_Cam1_C2W;
-		uniform float4x4 _Cam2_W2C,_Cam2_W2S,_Cam2_S2C,_Cam2_C2W;
-		uniform float4 _SParams1,_Cam1_PParams;
-		uniform float4 _SParams2,_Cam2_PParams;
+		uniform float4x4 _Cam1_W2C, _Cam1_W2S, _Cam1_S2C, _Cam1_C2W;
+		uniform float4x4 _Cam2_W2C, _Cam2_W2S, _Cam2_S2C, _Cam2_C2W;
+		uniform float4 _SParams1, _Cam1_PParams;
+		uniform float4 _SParams2, _Cam2_PParams;
 		
 		uniform float _MRT_TexSize;
-		float _Scale,_Speed,_Life,_EmitRate,_Sepa;
+		float _Scale, _Speed, _Life, _EmitRate;
 		
 		v2f vert (appdata v)
 		{
 			v2f o;
 			o.vertex = v.vertex;
-			o.uv = (v.vertex.xy/v.vertex.w+1.0)*0.5;
+			o.uv = (v.vertex.xy / v.vertex.w + 1.0)*0.5;
 			return o;
 		}
 		
@@ -215,7 +213,7 @@
 					col = half4(1,1,1,1);
 					life = _Life*rand(i.uv+_Time.yx);
 					float r = rand(i.uv+_Time.xy);
-					pos.xyz = fullPos(float2(i.uv.x,1),1+50*(1-r*r));
+					pos.xyz = fullPos(float2(i.uv.x,1),1+29*(1-r*r));
 					pos.y = fullPos(float2(i.uv.x,1),51).y;
 					vel.xyz = -Cam2U;
 				}
@@ -240,11 +238,18 @@
 				n2 = tex2D(_NoiseTex, cp.xz*_Scale*2.0),
 				n3 = tex2D(_NoiseTex, cp.xz*_Scale*4.0);
 			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
+			float ground = -5 + n1.b * 5;
 			life -= unity_DeltaTime.x;
 			
-			if(life > 0&&pos.y>-2+n1.b*2){
-				vel.xyz -= Cam2U * unity_DeltaTime.x * 100*(0.7+0.3*i.uv.y) + (curl.x*Cam2R+curl.y*Cam2F)*unity_DeltaTime;
-				vel.xyz *= 0.5;
+			if(life > 0){
+				if (pos.y > ground) {
+					vel.xyz -= Cam2U * unity_DeltaTime.x * 100 * (0.7 + 0.3*i.uv.y) + (curl.x*Cam2R + curl.y*Cam2F)*unity_DeltaTime;
+					vel.xyz *= 0.5;
+				}
+				else {
+					vel.y += (ground - pos.y)*10;
+					pos.y = ground;
+				}
 				pos.xyz += vel.xyz * unity_DeltaTime.x;
 			}
 			

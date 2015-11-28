@@ -3,7 +3,6 @@
 	Properties
 	{
 		_Size ("size", Float) = 0.1
-		_Sepa ("separate", Float) = 2
 		_Col0 ("first color", Color) = (0,0.5,1,1)
 		_Col1 ("die color", Color) = (1,1,1,1)
 	}
@@ -40,7 +39,7 @@
 		half4 _Pos_TexelSize;
 		uniform int _MRT_TexSize, _Offset;
 		float4 _Col0,_Col1;
-		float _Size,_Sepa;
+		float _Size;
 		
 		v2f vert (appdata v)
 		{
