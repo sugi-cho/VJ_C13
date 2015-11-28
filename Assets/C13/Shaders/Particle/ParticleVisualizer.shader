@@ -129,7 +129,7 @@
 				discard;
 			
 			outDiffuse = i.color;
-			outSpecSmoothness = 0.5;
+			outSpecSmoothness = half4(0.9,0.9,0.9,0.2);
 			outNormal.xyz = normalize(vNormal.x*i.vRight + vNormal.y*i.vUp + vNormal.z*i.vForward);
 			outNormal = half4(outNormal.xyz*0.5+0.5,1);
 			outEmission = 0;

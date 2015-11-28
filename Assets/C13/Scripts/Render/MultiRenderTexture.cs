@@ -10,7 +10,7 @@ public class MultiRenderTexture : MonoBehaviour
 	public RenderTextureUtil util;
 	public bool showTex;
 
-	public int[] initRenderPasses;
+    public int[] initRenderPasses;
 	public int[] updateRenderPasses;
 
 	List<RenderTexture[]>

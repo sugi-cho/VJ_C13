@@ -11,6 +11,13 @@
 	CGINCLUDE
 		#include "UnityCG.cginc"
 		#include "Assets/CGINC/Random.cginc"
+		
+		#define Cam1R _Cam1_W2C[0].xyz
+		#define Cam1U _Cam1_W2C[1].xyz
+		#define Cam1F _Cam1_W2C[2].xyz
+		#define Cam2R _Cam2_W2C[0].xyz
+		#define Cam2U _Cam2_W2C[1].xyz
+		#define Cam2F _Cam2_W2C[2].xyz
 
 		struct appdata
 		{
@@ -56,15 +63,25 @@
 			return o;
 		}
 		
-		float2 sUV(float3 wPos)//screen space
+		float2 sUV(float3 wPos)//screen space of main
 		{
 			float4 sPos = mul(_Cam1_W2S, float4(wPos,1));
 			sPos = ComputeScreenPos(sPos);
 			return sPos.xy/sPos.w;
 		}
-		float3 cPos(float3 wPos)//camera space
+		float3 cPos(float3 wPos)//camera space of main
 		{
 			return mul(_Cam1_W2C, float4(wPos,1)).xyz;
+		}
+		float2 sUV2(float3 wPos)//screen space of target
+		{
+			float4 sPos = mul(_Cam2_W2S, float4(wPos,1));
+			sPos = ComputeScreenPos(sPos);
+			return sPos.xy/sPos.w;
+		}
+		float3 cPos2(float3 wPos)//camera space of target
+		{
+			return mul(_Cam2_W2C, float4(wPos,1)).xyz;
 		}
 		float3 rgb2hsv(float3 c)
 		{
@@ -82,10 +99,7 @@
 		    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
 		    return lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y) * c.z;
 		}
-		float colorRate(float t){
-			return saturate(t)*saturate(_Life-t);
-		}
-		float3 fullPos(float2 uv, float d){
+		float3 fullPos(float2 uv, float d){ //fullPos at target
 			float n = _Cam1_PParams.y;
 			float f = _Cam1_PParams.z;
 			
@@ -94,9 +108,9 @@
 			float2 xy = w*(2*uv-1);
 			
 			float4 pos = float4(xy,z,w);
-			pos = mul(_Cam1_S2C,pos);
+			pos = mul(_Cam2_S2C,pos);
 			pos.w = 1;
-			pos = mul(_Cam1_C2W,pos);
+			pos = mul(_Cam2_C2W,pos);
 			
 			return pos.xyz;
 		}
@@ -108,7 +122,7 @@
 			o.col = 0;
 			return o;
 		}
-		pOut fragEmit(v2f i)
+		pOut takiEmitter(v2f i)
 		{
 			float4
 				vel = tex2D(_Vel, i.uv),
@@ -120,10 +134,10 @@
 				float emission = 1+tex2D(_NoiseTex, float2(i.uv.x*2,0.5)*3)+0.5*tex2D(_NoiseTex, float2(i.uv.x*4,0.75))+0.25*tex2D(_NoiseTex, float2(i.uv.x*8,0.25));
 				if(frac(abs(life))<_EmitRate*unity_DeltaTime.x*emission)
 				{
-					col = .8;
+					col = half4(1,1,1,1);
 					life = _Life*rand(i.uv+_Time.yx);
 					pos.xyz = fullPos(float2(i.uv.x,0.99),50);
-					vel = half4(0,pow(1+i.uv.y+emission,0.5),0,0);
+					vel = half4(pow(1+i.uv.y+emission,0.5)*Cam2F,0);
 				}
 			}
 			
@@ -133,23 +147,22 @@
 			o.col = col;
 			return o;
 		}
-		pOut fragUpdate (v2f i)
+		pOut takiUpdate (v2f i)
 		{
 			float4
 				vel = tex2D(_Vel, i.uv),
 				pos = tex2D(_Pos, i.uv),
 				col = tex2D(_Col, i.uv);
 			float life = pos.w;
-			float2 uv = sUV(pos.xyz);
+			float2 uv = sUV2(pos.xyz);
 			if(min(uv.x,uv.y) < 0)
 				pos.w -= 1.0;
 			if(1 < max(uv.x,uv.y))
 				pos.w -= 1.0;
 			
-			
 			float4
 				flow = tex2D(_FlowTex, uv);
-			vel.z -= 9.8*unity_DeltaTime.x*(0.7+i.uv.y*0.3);
+			vel.xyz -= 9.8*unity_DeltaTime.x*(0.7+i.uv.y*0.3)*Cam2U;
 			
 			pos.xyz += vel.xyz*unity_DeltaTime.x * saturate(pos.w);
 			pos.w -= unity_DeltaTime.x;
@@ -160,7 +173,7 @@
 			o.col = col;
 			return o;
 		}
-		pOut fragCurl (v2f i)
+		pOut curl (v2f i)
 		{
 			float4
 				vel = tex2D(_Vel, i.uv),
@@ -179,12 +192,65 @@
 			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
 			
 			curl *= _Speed;
-			pos.xyz += (curl.x*right+curl.y*up)*unity_DeltaTime.x * saturate(pos.w);
+			pos.xyz += (curl.x*right+curl.y*up)*unity_DeltaTime.x * saturate(life);
 			pos.z += curl.z*unity_DeltaTime.x;
 			
 			pOut o;
 			o.vel = vel;
 			o.pos = pos;
+			o.col = col;
+			return o;
+		}
+		pOut yukiEmitter(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			
+			if(life < 0){
+				life -= unity_DeltaTime.x;
+				if(i.uv.y-frac(abs(life))<unity_DeltaTime.x*1e-3)
+				{
+					col = half4(1,1,1,1);
+					life = _Life*rand(i.uv+_Time.yx);
+					float r = rand(i.uv+_Time.xy);
+					pos.xyz = fullPos(float2(i.uv.x,1),1+50*(1-r*r));
+					pos.y = fullPos(float2(i.uv.x,1),51).y;
+					vel.xyz = -Cam2U;
+				}
+			}
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
+		pOut yukiUpdate(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			float3
+				cp = cPos(pos.xyz);
+			float4
+				n1 = tex2D(_NoiseTex, cp.xz*_Scale),
+				n2 = tex2D(_NoiseTex, cp.xz*_Scale*2.0),
+				n3 = tex2D(_NoiseTex, cp.xz*_Scale*4.0);
+			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
+			life -= unity_DeltaTime.x;
+			
+			if(life > 0&&pos.y>-1+n1.b*2){
+				vel.xyz -= Cam2U * unity_DeltaTime.x * 10*(0.7+0.3*i.uv.y) + (curl.x*Cam2R+curl.y*Cam2F)*unity_DeltaTime;
+				vel.xyz *= 0.5;
+				pos.xyz += vel.xyz * unity_DeltaTime.x;
+			}
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
 			o.col = col;
 			return o;
 		}
@@ -205,7 +271,7 @@
 		{
 			CGPROGRAM
 			#pragma vertex vert
-			#pragma fragment fragEmit
+			#pragma fragment takiEmitter
 			#pragma target 3.0
 			ENDCG
 		}
@@ -213,7 +279,7 @@
 		{
 			CGPROGRAM
 			#pragma vertex vert
-			#pragma fragment fragUpdate
+			#pragma fragment takiUpdate
 			#pragma target 3.0
 			ENDCG
 		}
@@ -221,7 +287,21 @@
 		{
 			CGPROGRAM
 			#pragma vertex vert
-			#pragma fragment fragCurl
+			#pragma fragment curl
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment yukiEmitter
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment yukiUpdate
 			#pragma target 3.0
 			ENDCG
 		}
