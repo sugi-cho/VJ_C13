@@ -1,0 +1,5 @@
+﻿using UnityEngine;using System.Collections;public class Controller : MonoBehaviour {    public int sqrtNumParticles = 256;    public Material        particleVisualizer,        particleUpdater,        noiseGenerator;    void Awake() {        var mm = GetComponentInChildren<MassMeshes>();        var mrt = GetComponentInChildren<MultiRenderTexture>();        mm.numMeshes = sqrtNumParticles * sqrtNumParticles;        mrt.util.texSize = sqrtNumParticles;        Application.targetFrameRate = 60;        Cursor.visible = false;        Cursor.lockState = CursorLockMode.Locked;    }	// Use this for initialization	void Start () {		}		// Update is called once per frame	void Update () {		}    [System.Serializable]    public class SceneUtil
+    {
+        public int[] updatePasses;
+        public 
+    }}

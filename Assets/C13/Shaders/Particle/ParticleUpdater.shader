@@ -242,8 +242,8 @@
 			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
 			life -= unity_DeltaTime.x;
 			
-			if(life > 0&&pos.y>-1+n1.b*2){
-				vel.xyz -= Cam2U * unity_DeltaTime.x * 10*(0.7+0.3*i.uv.y) + (curl.x*Cam2R+curl.y*Cam2F)*unity_DeltaTime;
+			if(life > 0&&pos.y>-2+n1.b*2){
+				vel.xyz -= Cam2U * unity_DeltaTime.x * 100*(0.7+0.3*i.uv.y) + (curl.x*Cam2R+curl.y*Cam2F)*unity_DeltaTime;
 				vel.xyz *= 0.5;
 				pos.xyz += vel.xyz * unity_DeltaTime.x;
 			}
