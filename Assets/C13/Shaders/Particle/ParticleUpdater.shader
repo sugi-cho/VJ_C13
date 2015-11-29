@@ -208,7 +208,7 @@
 			
 			if(life < 0){
 				life -= unity_DeltaTime.x;
-				if(i.uv.y-frac(abs(life))<unity_DeltaTime.x*1e-3)
+				if(i.uv.y-frac(abs(life*0.01))<unity_DeltaTime.x*1e-3)
 				{
 					col = half4(1,1,1,1);
 					life = _Life*rand(i.uv+_Time.yx);

@@ -1,4 +1,18 @@
-﻿using UnityEngine;using System.Collections;public class Controller : MonoBehaviour {    public int sqrtNumParticles = 256;    public Material        particleVisualizer,        particleUpdater,        noiseGenerator;    public KeyCode sceneSpecialKey;    public SceneUtil[] utils;    MultiRenderTexture mrtex
+﻿using UnityEngine;
+using System.Collections;
+
+public class Controller : MonoBehaviour {
+    public int sqrtNumParticles = 256;
+    public Material
+        particleVisualizer,
+        particleUpdater,
+        noiseGenerator;
+    public KeyCode sceneSpecialKey;
+    public SceneKeySetting[] keySettings;
+
+    SceneInfo currentScene;
+
+    MultiRenderTexture mrtex
     {
         get
         {
@@ -6,53 +20,70 @@
                 _mrtex = GetComponentInChildren<MultiRenderTexture>();
             return _mrtex;
         }
-    }    MultiRenderTexture _mrtex;    void Awake() {        var mm = GetComponentInChildren<MassMeshes>();        mm.numMeshes = sqrtNumParticles * sqrtNumParticles;        mrtex.util.texSize = sqrtNumParticles;        Application.targetFrameRate = 60;        Cursor.visible = false;        Cursor.lockState = CursorLockMode.Locked;    }	// Use this for initialization	void Start () {		}		// Update is called once per frame	void Update () {        SelectScene();	}    void SelectScene()
+    }
+    MultiRenderTexture _mrtex;
+
+    void Awake() {
+        var mm = GetComponentInChildren<MassMeshes>();
+        mm.numMeshes = sqrtNumParticles * sqrtNumParticles;
+        mrtex.util.texSize = sqrtNumParticles;
+
+        Application.targetFrameRate = 60;
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+    }
+	// Use this for initialization
+	void Start () {
+	
+	}
+	
+	// Update is called once per frame
+	void Update () {
+        SelectScene();
+	}
+    void SelectScene()
     {
         var special = Input.GetKey(sceneSpecialKey);
-        for(var i = 0; i < utils.Length; i++)
+        for(var i = 0; i < keySettings.Length; i++)
         {
-            if(utils[i].isCalled(special))
+            if(keySettings[i].isCalled(special))
             {
-                SetUtil(utils[i]);
+                var scene = keySettings[i].scene;
+                SetScene(scene);
                 continue;
             }
         }
-    }    public void SetUtil(SceneUtil util)
+    }
+
+    public void SetScene(SceneInfo scene)
     {
-        mrtex.updateRenderPasses = util.updatePasses;
+        mrtex.updateRenderPasses = scene.updatePasses;
 
-        noiseGenerator.SetFloat("_S", util.noiseSpeed);
+        noiseGenerator.SetFloat("_S", scene.noiseSpeed);
 
-        particleUpdater.SetFloat("_Scale", util.curlScale);
-        particleUpdater.SetFloat("_Speed", util.curlSpeed);
-        particleUpdater.SetFloat("_Life", util.pLifeTime);
-        particleUpdater.SetFloat("_EmitRate", util.emitRate);
+        particleUpdater.SetFloat("_Scale", scene.curlScale);
+        particleUpdater.SetFloat("_Speed", scene.curlSpeed);
+        particleUpdater.SetFloat("_Life", scene.pLifeTime);
+        particleUpdater.SetFloat("_EmitRate", scene.emitRate);
 
-        particleVisualizer.SetFloat("_Size", util.particleSize);
-        particleVisualizer.SetColor("_Col0", util.col0);
-        particleVisualizer.SetColor("_Col1", util.col1);
+        particleVisualizer.SetFloat("_Size", scene.particleSize);
+        particleVisualizer.SetColor("_Col0", scene.col0);
+        particleVisualizer.SetColor("_Col1", scene.col1);
 
-        util.cSetting[0].Set();
-    }    [System.Serializable]    public class SceneUtil
+        scene.cSetting[0].Set();
+        currentScene = scene;
+    }
+
+    [System.Serializable]
+    public class SceneKeySetting
     {
-        public string name = "option";
         public bool specialKey;
         public KeyCode key;
-
-        public int[] updatePasses;
-        public float noiseSpeed = 0.2f;
-        public float curlScale = 0.04f;
-        public float curlSpeed = 0.5f;
-        public float pLifeTime = 10f;
-        public float emitRate = 0.1f;
-        public float particleSize = 0.1f;
-
-        public Color col0, col1;
-
-        public CameraSetting[] cSetting = new CameraSetting[4];
+        public SceneInfo scene;
 
         public bool isCalled(bool special)
         {
             return special == specialKey && Input.GetKeyDown(key);
         }
-    }}
+    }
+}
