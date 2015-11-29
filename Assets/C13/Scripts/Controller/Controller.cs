@@ -10,6 +10,7 @@ public class Controller : MonoBehaviour {
     public KeyCode sceneSpecialKey;
     public SceneKeySetting[] keySettings;
 
+    [SerializeField]
     SceneInfo currentScene;
 
     MultiRenderTexture mrtex
@@ -28,12 +29,12 @@ public class Controller : MonoBehaviour {
         mm.numMeshes = sqrtNumParticles * sqrtNumParticles;
         mrtex.util.texSize = sqrtNumParticles;
 
-        Application.targetFrameRate = 60;
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        Application.targetFrameRate = 30;
+        //Cursor.visible = false;
+        //Cursor.lockState = CursorLockMode.Locked;
     }
-	// Use this for initialization
-	void Start () {
+    // Use this for initialization
+    void Start () {
 	
 	}
 	
@@ -43,11 +44,14 @@ public class Controller : MonoBehaviour {
 	}
     void SelectScene()
     {
+        if (!Input.anyKey)
+            return;
         var special = Input.GetKey(sceneSpecialKey);
         for(var i = 0; i < keySettings.Length; i++)
         {
             if(keySettings[i].isCalled(special))
             {
+                Debug.Log("true");
                 var scene = keySettings[i].scene;
                 SetScene(scene);
                 continue;
@@ -65,8 +69,7 @@ public class Controller : MonoBehaviour {
         particleUpdater.SetFloat("_Speed", scene.curlSpeed);
         particleUpdater.SetFloat("_Life", scene.pLifeTime);
         particleUpdater.SetFloat("_EmitRate", scene.emitRate);
-
-        particleVisualizer.SetFloat("_Size", scene.particleSize);
+        
         particleVisualizer.SetColor("_Col0", scene.col0);
         particleVisualizer.SetColor("_Col1", scene.col1);
 
@@ -77,6 +80,7 @@ public class Controller : MonoBehaviour {
     [System.Serializable]
     public class SceneKeySetting
     {
+        public string name = "option scene name";
         public bool specialKey;
         public KeyCode key;
         public SceneInfo scene;

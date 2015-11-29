@@ -48,16 +48,16 @@ public class MultiRenderTexture : MonoBehaviour
 			Render (updateRenderPasses [i]);
 	}
 
-	void OnDestroy ()
-	{
-		foreach (var rts in rtsList) {
-			for (var i = 0; i < 2; i++) {
-				if (rts [i] != null) {
-					rts [i].Release ();
-					Destroy (rts [i]);
-				}
-			}
-		}
+    void OnDestroy()
+    {
+        foreach (var rts in rtsList) {
+            for (var i = 0; i < 2; i++) {
+                if (rts[i] != null) {
+                    Extensions.ReleaseRenderTexture(rts[i]);
+                }
+            }
+        }
+        Extensions.ReleaseRenderTexture(dRt);
 	}
 
 	RenderTexture[] CreateRenderTextures (string name="output")

@@ -8,7 +8,6 @@ public class SceneInfo : MonoBehaviour {
     public float curlSpeed = 0.5f;
     public float pLifeTime = 10f;
     public float emitRate = 0.1f;
-    public float particleSize = 0.1f;
 
     public Color col0, col1;
 

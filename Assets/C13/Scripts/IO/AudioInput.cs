@@ -35,6 +35,13 @@ public class AudioInput : MonoBehaviour
 
 		CreateRts ();
 	}
+    void OnDestroy()
+    {
+        for(var i = 0; i < rts.Length; i++)
+        {
+            Extensions.ReleaseRenderTexture(rts[i]);
+        }
+    }
 
 	void CreateRts ()
 	{

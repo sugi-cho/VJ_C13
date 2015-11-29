@@ -134,8 +134,8 @@
 				{
 					col = half4(1,1,1,1);
 					life = _Life*rand(i.uv+_Time.yx);
-					pos.xyz = fullPos(float2(i.uv.x,0.99),50);
-					vel = half4(pow(1+i.uv.y+emission,0.5)*Cam2F,0);
+					pos.xyz = fullPos(float2(i.uv.x,0.99),10);
+					vel = half4(pow(0.5 + emission*0.5, 0.5)*Cam2F*lerp(0.2, 0.25, i.uv.y), 0);
 				}
 			}
 			
@@ -160,7 +160,7 @@
 			
 			float4
 				flow = tex2D(_FlowTex, uv);
-			vel.xyz -= 9.8*unity_DeltaTime.x*(0.7+i.uv.y*0.3)*Cam2U;
+			vel.xyz -= unity_DeltaTime.x*(1.0-i.uv.y*0.5)*Cam2U;
 			
 			pos.xyz += vel.xyz*unity_DeltaTime.x * saturate(pos.w);
 			pos.w -= unity_DeltaTime.x;
@@ -205,10 +205,14 @@
 				pos = tex2D(_Pos, i.uv),
 				col = tex2D(_Col, i.uv);
 			float life = pos.w;
+
+			float3
+				cp = cPos(pos.xyz);
+			float n = tex2D(_NoiseTex, cp.xz*_Scale).b;
 			
 			if(life < 0){
 				life -= unity_DeltaTime.x;
-				if(i.uv.y-frac(abs(life*0.01))<unity_DeltaTime.x*1e-3)
+				if(i.uv.y-frac(abs(life*0.01))*n<unity_DeltaTime.x*1e-3)
 				{
 					col = half4(1,1,1,1);
 					life = _Life*rand(i.uv+_Time.yx);
@@ -242,15 +246,12 @@
 			life -= unity_DeltaTime.x;
 			
 			if(life > 0){
-				if (pos.y > ground) {
-					vel.xyz -= Cam2U * unity_DeltaTime.x * 100 * (0.7 + 0.3*i.uv.y) + (curl.x*Cam2R + curl.y*Cam2F)*unity_DeltaTime;
-					vel.xyz *= 0.5;
-				}
-				else {
-					vel.y += (ground - pos.y)*10;
-					pos.y = ground;
-				}
+				vel.xyz -= Cam2U * unity_DeltaTime.x * 100 * (0.7 + 0.3*i.uv.y) + (curl.x*Cam2R + curl.y*Cam2F)*unity_DeltaTime;
+				vel.xyz *= 0.5;
+
 				pos.xyz += vel.xyz * unity_DeltaTime.x;
+				if (pos.y < ground)
+					pos.y = ground;
 			}
 			
 			pOut o;
