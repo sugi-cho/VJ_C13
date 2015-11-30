@@ -48,8 +48,8 @@
 		
 		uniform float4x4 _Cam1_W2C, _Cam1_W2S, _Cam1_S2C, _Cam1_C2W;
 		uniform float4x4 _Cam2_W2C, _Cam2_W2S, _Cam2_S2C, _Cam2_C2W;
-		uniform float4 _SParams1, _Cam1_PParams;
-		uniform float4 _SParams2, _Cam2_PParams;
+		uniform float4 _Cam1_SParams, _Cam1_PParams;
+		uniform float4 _Cam2_SParams, _Cam2_PParams;
 		
 		uniform float _MRT_TexSize;
 		float _Scale, _Speed, _Life, _EmitRate;
@@ -261,12 +261,69 @@
 			o.col = col;
 			return o;
 		}
+		pOut flowUpdate(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			
+			float2 uv = sUV(pos.xyz);
+			float3 cp = cPos(pos.xyz);
+			float4 
+				n1 = tex2D(_NoiseTex, cp.xy*_Scale*0.1),
+				n2 = tex2D(_NoiseTex, cp.xy*_Scale*0.1*2.0),
+				n3 = tex2D(_NoiseTex, cp.xy*_Scale*0.1*4.0);
+			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
+			
+			col.rgb = abs(normalize(vel.xyz));
+			vel.xyz += curl.xyz*_Speed;
+			vel.y -= unity_DeltaTime.x;
+			vel*=0.9;
+			pos.xyz += vel.xyz * unity_DeltaTime.x;
+			pos.xyz = frac(pos.xyz/30+0.5)*30-15;
+			life = _Life;
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
+		pOut flowTex(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			
+			float2 uv = sUV(pos.xyz);
+			float3 cp = cPos(pos.xyz);
+			float4 
+				flow = tex2D(_FlowTex,uv),
+				n1 = tex2D(_NoiseTex, cp.xy*_Scale*0.1),
+				n2 = tex2D(_NoiseTex, cp.xy*_Scale*0.1*2.0),
+				n3 = tex2D(_NoiseTex, cp.xy*_Scale*0.1*4.0);
+			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
+			
+			col.rgb = half3(uv,0);
+			flow = tex2D(_FlowTex, uv);
+			pos.xyz = fullPos(i.uv,60-flow.b*40);
+			col = 1;
+			life = 1;
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
 	ENDCG
 	SubShader
 	{
 		ZTest Always
 
-		Pass
+		Pass//0
 		{
 			CGPROGRAM
 			#pragma vertex vert
@@ -274,7 +331,7 @@
 			#pragma target 3.0
 			ENDCG
 		}
-		Pass
+		Pass//1
 		{
 			CGPROGRAM
 			#pragma vertex vert
@@ -282,7 +339,7 @@
 			#pragma target 3.0
 			ENDCG
 		}
-		Pass
+		Pass//2
 		{
 			CGPROGRAM
 			#pragma vertex vert
@@ -290,7 +347,7 @@
 			#pragma target 3.0
 			ENDCG
 		}
-		Pass
+		Pass//3
 		{
 			CGPROGRAM
 			#pragma vertex vert
@@ -298,17 +355,35 @@
 			#pragma target 3.0
 			ENDCG
 		}
-		Pass{
+		Pass//4
+		{
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment yukiEmitter
 			#pragma target 3.0
 			ENDCG
 		}
-		Pass{
+		Pass//5
+		{
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment yukiUpdate
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//6
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment flowUpdate
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//7
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment flowTex
 			#pragma target 3.0
 			ENDCG
 		}
