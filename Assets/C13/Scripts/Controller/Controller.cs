@@ -41,12 +41,12 @@ public class Controller : MonoBehaviour {
         mrtex.util.texSize = sqrtNumParticles;
 
         Application.targetFrameRate = 30;
-		if(Application.platform != RuntimePlatform.OSXEditor &&
-			Application.platform != RuntimePlatform.OSXEditor)
+#if !UNITY_EDITOR
 		{
 			Cursor.visible = false;
 			Cursor.lockState = CursorLockMode.Locked;
 		}
+#endif
     }
     // Use this for initialization
     void Start () {
