@@ -1,19 +1,26 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityStandardAssets.ImageEffects;
 
 public class CameraSetting : MonoBehaviour {
+	public float targetDistance = 10f;
+	public float farDistanc = 30f;
 
-    public void Set()
-    {
+	Camera cam;
+	DepthOfField dof;
 
-    }
 	// Use this for initialization
-	void Start () {
-	
+	void Start()
+	{
+		cam = Camera.main;
+		dof = cam.GetComponent<DepthOfField>();
 	}
-	
-	// Update is called once per frame
-	void Update () {
-	
+	public void Set()
+    {
+		dof.focalLength = targetDistance;
+    }
+	public void CameraUpdate()
+	{
+
 	}
 }

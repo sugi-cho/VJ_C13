@@ -7,7 +7,12 @@ public class Controller : MonoBehaviour {
         particleVisualizer,
         particleUpdater,
         noiseGenerator;
-    public KeyCode sceneSpecialKey;
+    public KeyCode
+		selectSpecialKey,
+		button0,
+		button1,
+		button2,
+		button3;
     public SceneKeySetting[] keySettings;
 
     [SerializeField]
@@ -41,24 +46,24 @@ public class Controller : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         SelectScene();
+		if (currentScene != null)
+			SceneUpdate();
 	}
     void SelectScene()
     {
         if (!Input.anyKey)
             return;
-        var special = Input.GetKey(sceneSpecialKey);
+        var select = Input.GetKey(selectSpecialKey);
         for(var i = 0; i < keySettings.Length; i++)
         {
-            if(keySettings[i].isCalled(special))
+            if(keySettings[i].isCalled(select))
             {
-                Debug.Log("true");
                 var scene = keySettings[i].scene;
                 SetScene(scene);
                 continue;
             }
         }
     }
-
     public void SetScene(SceneInfo scene)
     {
         mrtex.updateRenderPasses = scene.updatePasses;
@@ -76,6 +81,10 @@ public class Controller : MonoBehaviour {
         scene.cSetting[0].Set();
         currentScene = scene;
     }
+	void SceneUpdate()
+	{
+		currentScene.SceneUpdate();
+	}
 
     [System.Serializable]
     public class SceneKeySetting
