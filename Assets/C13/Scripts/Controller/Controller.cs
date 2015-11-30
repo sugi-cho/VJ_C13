@@ -12,7 +12,13 @@ public class Controller : MonoBehaviour {
 		button0,
 		button1,
 		button2,
-		button3;
+		button3,
+		camButton0,
+		camButton1,
+		camButton2,
+		camButton3,
+		focusIn,
+		focusOut;
     public SceneKeySetting[] keySettings;
 
     [SerializeField]
@@ -35,8 +41,12 @@ public class Controller : MonoBehaviour {
         mrtex.util.texSize = sqrtNumParticles;
 
         Application.targetFrameRate = 30;
-        //Cursor.visible = false;
-        //Cursor.lockState = CursorLockMode.Locked;
+		if(Application.platform != RuntimePlatform.OSXEditor &&
+			Application.platform != RuntimePlatform.OSXEditor)
+		{
+			Cursor.visible = false;
+			Cursor.lockState = CursorLockMode.Locked;
+		}
     }
     // Use this for initialization
     void Start () {
@@ -48,7 +58,8 @@ public class Controller : MonoBehaviour {
         SelectScene();
 		if (currentScene != null)
 			SceneUpdate();
-	}
+        Time.timeScale = Input.GetMouseButton(0) ? 0.1f : Mathf.Lerp(Time.timeScale, 1f, 0.05f);
+    }
     void SelectScene()
     {
         if (!Input.anyKey)
@@ -78,8 +89,8 @@ public class Controller : MonoBehaviour {
         particleVisualizer.SetColor("_Col0", scene.col0);
         particleVisualizer.SetColor("_Col1", scene.col1);
 
-        scene.cSetting[0].Set();
         currentScene = scene;
+        currentScene.Init();
     }
 	void SceneUpdate()
 	{

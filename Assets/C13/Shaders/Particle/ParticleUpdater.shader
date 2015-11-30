@@ -5,6 +5,7 @@
 		_Scale ("curl scale", Float) = 0.1
 		_Speed ("curl speed", Float) = 1
 		_Life ("life time", Float) = 30
+		_EmitRate ("emit rate", Float) = 0.1
 	}
 	CGINCLUDE
 		#include "UnityCG.cginc"
@@ -205,20 +206,21 @@
 				pos = tex2D(_Pos, i.uv),
 				col = tex2D(_Col, i.uv);
 			float life = pos.w;
-
+			
+			float r = rand(i.uv.yx+_Time.y);
+			float3 newPos = fullPos(float2(i.uv.x,1),1+29*(1-i.uv.y*i.uv.y));
+			newPos.y = fullPos(float2(i.uv.x,lerp(1.0,1.5,r)),30).y;
 			float3
-				cp = cPos(pos.xyz);
-			float n = tex2D(_NoiseTex, cp.xz*_Scale).b;
+				cp = cPos2(newPos.xyz);
+			float n = tex2D(_NoiseTex, cp.xz*_Scale+_Time.x).b;
 			
 			if(life < 0){
 				life -= unity_DeltaTime.x;
-				if(i.uv.y-frac(abs(life*0.01))*n<unity_DeltaTime.x*1e-3)
+				if(rand(i.uv.xy+_Time.xy)*500-frac(abs(life*0.01))*n<unity_DeltaTime.x)
 				{
-					col = half4(1,1,1,1);
+					col = 1;
 					life = _Life*rand(i.uv+_Time.yx);
-					float r = rand(i.uv+_Time.xy);
-					pos.xyz = fullPos(float2(i.uv.x,1),1+29*(1-r*r));
-					pos.y = fullPos(float2(i.uv.x,lerp(0.9,1.1,i.uv.y)),30).y;
+					pos.xyz = newPos;
 					vel.xyz = -Cam2U;
 				}
 			}
@@ -236,7 +238,7 @@
 				col = tex2D(_Col, i.uv);
 			float life = pos.w;
 			float3
-				cp = cPos(pos.xyz);
+				cp = cPos2(pos.xyz);
 			float4
 				n1 = tex2D(_NoiseTex, cp.xz*_Scale),
 				n2 = tex2D(_NoiseTex, cp.xz*_Scale*2.0),
@@ -244,10 +246,9 @@
 			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
 			float ground = -5 + n1.b * 5;
 			life -= unity_DeltaTime.x;
-			
-			if(life > 0){
-				vel.xyz -= Cam2U * unity_DeltaTime.x * 100 * (0.7 + 0.3*i.uv.y) + (curl.x*Cam2R + curl.y*Cam2F)*unity_DeltaTime;
-				vel.xyz *= 0.5;
+			if(0 < life){
+				vel.xyz -= Cam2U * unity_DeltaTime.x * 5 * (0.7 + 0.3*i.uv.y) + (curl.x*Cam2R + curl.y*Cam2F)*unity_DeltaTime*_Speed;
+				vel.xyz *= 0.8;
 
 				pos.xyz += vel.xyz * unity_DeltaTime.x;
 				if (pos.y < ground)
