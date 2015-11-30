@@ -116,7 +116,7 @@
 		{
 			pOut o;
 			o.vel = 0;
-			o.pos = float4(fullPos(i.uv,20),-rand(i.uv)*_Life);
+			o.pos = float4(fullPos(i.uv,20),-1-i.uv.y*_Life);
 			o.col = 0;
 			return o;
 		}
@@ -218,7 +218,7 @@
 					life = _Life*rand(i.uv+_Time.yx);
 					float r = rand(i.uv+_Time.xy);
 					pos.xyz = fullPos(float2(i.uv.x,1),1+29*(1-r*r));
-					pos.y = fullPos(float2(i.uv.x,1),51).y;
+					pos.y = fullPos(float2(i.uv.x,lerp(0.9,1.1,i.uv.y)),30).y;
 					vel.xyz = -Cam2U;
 				}
 			}
