@@ -24,7 +24,7 @@ public class Controller : MonoBehaviour {
     [SerializeField]
     SceneInfo currentScene;
 
-    MultiRenderTexture mrtex
+    public MultiRenderTexture mrtex
     {
         get
         {
@@ -58,7 +58,7 @@ public class Controller : MonoBehaviour {
         SelectScene();
 		if (currentScene != null)
 			SceneUpdate();
-        Time.timeScale = Input.GetMouseButton(0) ? 0.1f : Mathf.Lerp(Time.timeScale, 1f, 0.05f);
+        Time.timeScale = Input.GetMouseButton(0) ? 0.2f : Mathf.Lerp(Time.timeScale, 1f, 0.03f);
     }
     void SelectScene()
     {

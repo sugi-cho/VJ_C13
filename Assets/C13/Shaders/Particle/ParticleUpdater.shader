@@ -10,6 +10,7 @@
 	CGINCLUDE
 		#include "UnityCG.cginc"
 		#include "Assets/CGINC/Random.cginc"
+		#include "Assets/CGINC/Quaternion.cginc"
 		
 		#define Cam1R _Cam1_W2C[0].xyz
 		#define Cam1U _Cam1_W2C[1].xyz
@@ -52,7 +53,7 @@
 		uniform float4 _Cam2_SParams, _Cam2_PParams;
 		
 		uniform float _MRT_TexSize;
-		float _Scale, _Speed, _Life, _EmitRate;
+		float _Scale, _Speed, _Life, _EmitRate,_FocalLength;
 		
 		v2f vert (appdata v)
 		{
@@ -82,6 +83,36 @@
 		{
 			return mul(_Cam2_W2C, float4(wPos,1)).xyz;
 		}
+		float3 fullPos(float2 uv, float d){ //fullPos2 at target
+			float n = _Cam1_PParams.y;
+			float f = _Cam1_PParams.z;
+			
+			float w = d;
+			float z = w*(2*(w-n)/(f-n)-1);
+			float2 xy = w*(2*uv-1);
+			
+			float4 pos = float4(xy,z,w);
+			pos = mul(_Cam1_S2C,pos);
+			pos.w = 1;
+			pos = mul(_Cam1_C2W,pos);
+			
+			return pos.xyz;
+		}
+		float3 fullPos2(float2 uv, float d){ //fullPos2 at target
+			float n = _Cam2_PParams.y;
+			float f = _Cam2_PParams.z;
+			
+			float w = d;
+			float z = w*(2*(w-n)/(f-n)-1);
+			float2 xy = w*(2*uv-1);
+			
+			float4 pos = float4(xy,z,w);
+			pos = mul(_Cam2_S2C,pos);
+			pos.w = 1;
+			pos = mul(_Cam2_C2W,pos);
+			
+			return pos.xyz;
+		}
 		float3 rgb2hsv(float3 c)
 		{
 		    float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -98,26 +129,11 @@
 		    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
 		    return lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y) * c.z;
 		}
-		float3 fullPos(float2 uv, float d){ //fullPos at target
-			float n = _Cam1_PParams.y;
-			float f = _Cam1_PParams.z;
-			
-			float w = d;
-			float z = w*(2*(w-n)/(f-n)-1);
-			float2 xy = w*(2*uv-1);
-			
-			float4 pos = float4(xy,z,w);
-			pos = mul(_Cam2_S2C,pos);
-			pos.w = 1;
-			pos = mul(_Cam2_C2W,pos);
-			
-			return pos.xyz;
-		}
 		pOut fragInit (v2f i)
 		{
 			pOut o;
 			o.vel = 0;
-			o.pos = float4(fullPos(i.uv,20),-1-i.uv.y*_Life);
+			o.pos = float4(fullPos(i.uv,10),-1-i.uv.y*_Life);
 			o.col = 0;
 			return o;
 		}
@@ -135,7 +151,7 @@
 				{
 					col = half4(1,1,1,1);
 					life = _Life*rand(i.uv+_Time.yx);
-					pos.xyz = fullPos(float2(i.uv.x,0.99),10);
+					pos.xyz = fullPos2(float2(i.uv.x,0.99),10);
 					vel = half4(pow(0.5 + emission*0.5, 0.5)*Cam2F*lerp(0.2, 0.25, i.uv.y), 0);
 				}
 			}
@@ -200,6 +216,32 @@
 			o.col = col;
 			return o;
 		}
+		pOut collToTaki(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			
+			float t = floor(_Time.y*5) * 0.3;
+			float3 coll = fullPos2(float2(rand(t),rand(t)), 10);
+			float rad = 3*frac(_Time.y*5);
+			float3 dist = pos.xyz - coll;
+			if(length(dist)<rad){
+				float3 to = coll + rad * normalize(dist);
+				dist = to - pos.xyz;
+				pos.xyz = to;
+				vel.xyz += dist/unity_DeltaTime.x;
+				col.rgb = normalize(vel.xyz)*0.5+0.5;
+				col.rgb *= col.rgb*length(vel.xyz);
+			}
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
 		pOut yukiEmitter(v2f i){
 			float4
 				vel = tex2D(_Vel, i.uv),
@@ -208,8 +250,8 @@
 			float life = pos.w;
 			
 			float r = rand(i.uv.yx+_Time.y);
-			float3 newPos = fullPos(float2(i.uv.x,1),1+29*(1-i.uv.y*i.uv.y));
-			newPos.y = fullPos(float2(i.uv.x,lerp(1.0,1.5,r)),30).y;
+			float3 newPos = fullPos2(float2(i.uv.x,1),1+29*(1-i.uv.y*i.uv.y));
+			newPos.y = fullPos2(float2(i.uv.x,lerp(1.0,1.5,r)),30).y;
 			float3
 				cp = cPos2(newPos.xyz);
 			float n = tex2D(_NoiseTex, cp.xz*_Scale+_Time.x).b;
@@ -310,8 +352,58 @@
 			
 			col.rgb = half3(uv,0);
 			flow = tex2D(_FlowTex, uv);
-			pos.xyz = fullPos(i.uv,60-flow.b*40);
+			pos.xyz = fullPos2(i.uv,60-flow.b*40);
 			col = 1;
+			life = _Life*((rand(i.uv.yx)+rand(i.uv.xy)/256)+1);
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
+		pOut collisionToCenter(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			
+			float3 center = fullPos(float2(0.5,0.5), _FocalLength);
+			float rad = _FocalLength*0.4;
+			float3 dist = pos.xyz - center;
+			if(length(dist)<rad){
+				float3 to = center + rad * normalize(dist);
+				dist = to - pos.xyz;
+				pos.xyz = to;
+				vel.xyz += dist/unity_DeltaTime.x;
+			}
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
+		pOut gotoCube(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			
+			float3 to;
+			
+			to.xy = frac(i.uv*10)*10;
+			to.z = floor(i.uv.x*10)/10+floor(i.uv.y*10);
+			to -= 5;
+			to = rotateAngleAxis(to,float3(1,2,3),0.01*_Time.y*UNITY_PI);
+			
+			vel.xyz += to.xyz - pos.xyz;
+			
+			col.rgb = 1+vel.xyz;
+			pos.xyz += vel.xyz * unity_DeltaTime.x;
+			vel.xyz *= 1-unity_DeltaTime.x;
 			life = 1;
 			
 			pOut o;
@@ -386,6 +478,22 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment flowTex
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//8
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment collToTaki
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//9
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment gotoCube
 			#pragma target 3.0
 			ENDCG
 		}

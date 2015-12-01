@@ -40,13 +40,14 @@ public class CameraSetting : MonoBehaviour {
 			targetFocalLength = targetDistance;
 		else
 			targetFocalLength = Mathf.Lerp(targetDistance, farDistance, focalLevel / 3f);
-	}
+        Shader.SetGlobalFloat("_FocalLength", targetFocalLength);
+    }
 	public void CameraUpdate()
 	{
         var mainCam = Camera.main;
         var dof = mainCam.GetComponent<DepthOfField>();
 
-        dof.focalLength = Mathf.Lerp(dof.focalLength, targetFocalLength, 0.2f);
+        dof.focalLength = Mathf.Lerp(dof.focalLength, targetFocalLength, 0.1f);
 		
 		//focus
 		if(Input.anyKeyDown){
