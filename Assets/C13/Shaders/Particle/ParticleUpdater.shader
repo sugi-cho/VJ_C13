@@ -281,8 +281,10 @@
 			vel.y -= unity_DeltaTime.x;
 			vel*=0.9;
 			pos.xyz += vel.xyz * unity_DeltaTime.x;
+			pos.x /= 2;
 			pos.xyz = frac(pos.xyz/30+0.5)*30-15;
-			life = _Life;
+			pos.x *= 2;
+			life = _Life*((rand(i.uv.yx)+rand(i.uv.xy)/256)+1);
 			
 			pOut o;
 			o.vel = vel;
