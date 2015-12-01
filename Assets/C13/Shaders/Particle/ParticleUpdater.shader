@@ -392,13 +392,13 @@
 				col = tex2D(_Col, i.uv);
 			float life = pos.w;
 			
-			float3 to;
-			
-			to.xy = frac(i.uv*10)*10;
-			to.z = floor(i.uv.x*10)/10+floor(i.uv.y*10);
-			to -= 5;
-			to = rotateAngleAxis(to,float3(1,2,3),0.01*_Time.y*UNITY_PI);
-			
+			float3 to=0;
+			to.x = frac(i.uv.x*10.0)*10.0;
+			to.y = frac(i.uv.y*10.0)*10.0;
+			to.z = floor(i.uv.x*10.0)/10.0+floor(i.uv.y*10.0);
+			to -= 5.0;
+			to = rotateAngleAxis(to,float3(1.0,2.0,3.0),0.01*_Time.y*UNITY_PI);
+			to.xyz = float3(i.uv*10.0,0);
 			vel.xyz += to.xyz - pos.xyz;
 			
 			col.rgb = 1+vel.xyz;
@@ -495,6 +495,7 @@
 			#pragma vertex vert
 			#pragma fragment gotoCube
 			#pragma target 3.0
+			#pragma glsl
 			ENDCG
 		}
 	}
