@@ -398,7 +398,7 @@
 			to.z = floor(i.uv.x*10.0)/10.0+floor(i.uv.y*10.0);
 			to -= 5.0;
 			to = rotateAngleAxis(to,float3(1.0,2.0,3.0),0.01*_Time.y*UNITY_PI);
-			to.xyz = float3(i.uv*10.0,0);
+			
 			vel.xyz += to.xyz - pos.xyz;
 			
 			col.rgb = 1+vel.xyz;
