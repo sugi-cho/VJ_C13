@@ -133,7 +133,7 @@
 		{
 			pOut o;
 			o.vel = 0;
-			o.pos = float4(fullPos(i.uv,10),-1-i.uv.y*_Life);
+			o.pos = float4(fullPos(i.uv,10), -_Life*((rand(i.uv.yx)+rand(i.uv.xy)/256)+1));
 			o.col = 0;
 			return o;
 		}
@@ -341,20 +341,23 @@
 				col = tex2D(_Col, i.uv);
 			float life = pos.w;
 			
-			float2 uv = sUV(pos.xyz);
+			float2 uv = sUV2(pos.xyz);
 			float3 cp = cPos(pos.xyz);
 			float4 
-				flow = tex2D(_FlowTex,uv),
+				tex = tex2D(_FlowTex,uv),
 				n1 = tex2D(_NoiseTex, cp.xy*_Scale*0.1),
 				n2 = tex2D(_NoiseTex, cp.xy*_Scale*0.1*2.0),
 				n3 = tex2D(_NoiseTex, cp.xy*_Scale*0.1*4.0);
 			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
 			
 			col.rgb = half3(uv,0);
-			flow = tex2D(_FlowTex, uv);
-			pos.xyz = fullPos2(i.uv,60-flow.b*40);
-			col = 1;
+			tex = tex2D(_FlowTex, uv);
+			float3 to = fullPos2(i.uv,60-20*length(tex.rgb));
+			vel.xyz += to - pos.xyz;
+			pos.xyz += vel.xyz * unity_DeltaTime.x;
+			vel.xyz *= 1-unity_DeltaTime.x;
 			life = _Life*((rand(i.uv.yx)+rand(i.uv.xy)/256)+1);
+			col.rgb = tex.rgb;
 			
 			pOut o;
 			o.vel = vel;
@@ -397,14 +400,119 @@
 			to.y = frac(i.uv.y*10.0)*10.0;
 			to.z = floor(i.uv.x*10.0)/10.0+floor(i.uv.y*10.0);
 			to -= 5.0;
-			to = rotateAngleAxis(to,float3(1.0,2.0,3.0),0.01*_Time.y*UNITY_PI);
+			to = rotateAngleAxis(to,float3(1.0,2.0,3.0),0.1*_Time.y*UNITY_PI);
 			
 			vel.xyz += to.xyz - pos.xyz;
 			
 			col.rgb = 1+vel.xyz;
 			pos.xyz += vel.xyz * unity_DeltaTime.x;
 			vel.xyz *= 1-unity_DeltaTime.x;
-			life = 1;
+			life = _Life*((rand(i.uv.yx)+rand(i.uv.xy)/256)+1);
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
+		pOut gotoSphere(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			
+			float3 to=0;
+			to.x = frac(i.uv.x*10.0)*10.0;
+			to.y = frac(i.uv.y*10.0)*10.0;
+			to.z = floor(i.uv.x*10.0)/10.0+floor(i.uv.y*10.0);
+			to -= 5.0;
+			to = normalize(to)*max(abs(to.x),max(abs(to.y),abs(to.z)));
+			to = rotateAngleAxis(to,float3(1.0,2.0,3.0),0.1*_Time.y*UNITY_PI);
+			
+			vel.xyz += to.xyz - pos.xyz;
+			
+			col.rgb = 1+vel.xyz;
+			pos.xyz += vel.xyz * unity_DeltaTime.x;
+			vel.xyz *= 1-unity_DeltaTime.x;
+			life = _Life*((rand(i.uv.yx)+rand(i.uv.xy)/256)+1);
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
+		pOut emitToCamCenter(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			
+			float3 center = fullPos(float2(0.5,0.5), _FocalLength);
+			float3 sphere = float3(
+				frac(i.uv.x*10),
+				frac(i.uv.y*10),
+				floor(i.uv.x*10)*0.01+floor(i.uv.y*10)*0.1
+			)-0.5;
+			
+			sphere = normalize(sphere) * max(abs(sphere.x),max(abs(sphere.y),abs(sphere.z)));
+			float3 emitPos = center + sphere*0.2;
+			
+			if(life<0){
+				life -= unity_DeltaTime.x;
+				float r = rand(i.uv+_Time.xy)+rand(i.uv.yx+_Time.yx)/256;
+				if(r*frac(life) < 50*unity_DeltaTime.x/_Pos_TexelSize.z/_Pos_TexelSize.z){
+					pos.xyz = emitPos;
+					vel.xyz = sphere*10;
+					col = 1;
+					life = _Life*(0.6+0.4*length(sphere.xyz));
+				}
+			}
+			else{
+				life -= unity_DeltaTime.x;
+				if(life<_Life*0.5){
+					vel.xyz += normalize(emitPos - pos.xyz)*unity_DeltaTime.x*2;
+					float3 dist = pos.xyz-emitPos;
+					if(length(dist)<2){
+						float3 to = emitPos+normalize(dist);
+						dist = to-pos.xyz;
+						vel.xyz += dist/unity_DeltaTime.x;
+					}
+					pos.xyz += vel.xyz*unity_DeltaTime.x;
+					col.rgb = vel.xyz*vel.xyz;
+					vel.xyz *= 1-unity_DeltaTime.x*0.1;
+					
+				}
+			}
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
+		pOut kieru(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			
+			float3
+				cp = cPos(pos.xyz),
+				right = normalize(_Cam1_W2C[0].xyz),
+				up = normalize(_Cam1_W2C[1].xyz);
+			float4
+				n1 = tex2D(_NoiseTex, cp.xy*_Scale),
+				n2 = tex2D(_NoiseTex, cp.xy*_Scale*2.0),
+				n3 = tex2D(_NoiseTex, cp.xy*_Scale*4.0);
+			float3 curl = n1.xyz+n2.xyz*0.5+n3.xyz*0.25;
+			
+			curl *= _Speed;
+			pos.xyz += (vel.xyz+(curl.x*right+curl.y*up))*unity_DeltaTime.x * saturate(life);
+			life -= unity_DeltaTime.x;
 			
 			pOut o;
 			o.vel = vel;
@@ -495,7 +603,30 @@
 			#pragma vertex vert
 			#pragma fragment gotoCube
 			#pragma target 3.0
-			#pragma glsl
+			ENDCG
+		}
+		Pass//10
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment gotoSphere
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//11
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment emitToCamCenter
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//12
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment kieru
+			#pragma target 3.0
 			ENDCG
 		}
 	}

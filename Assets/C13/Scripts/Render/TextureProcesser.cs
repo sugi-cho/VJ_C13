@@ -11,18 +11,18 @@ public class TextureProcesser : MonoBehaviour {
     RenderTexture rt,rtb;
     // Use this for initialization
     void Start () {
-        rt = Extensions.CreateRenderTexture(original.width, original.height, rt);
-        Shader.SetGlobalTexture(propName, rt);
-		
+        // rt = Extensions.CreateRenderTexture(original.width, original.height, rt);
+        // Shader.SetGlobalTexture(propName, rt);
+        Shader.SetGlobalTexture(propName, original);
     }
-	void OnDestroy(){
-        Extensions.ReleaseRenderTexture(rt);
-    }
+	// void OnDestroy(){
+    //     Extensions.ReleaseRenderTexture(rt);
+    // }
 	
-	// Update is called once per frame
-	void Update () {
-        Graphics.Blit(original, rt, processMat);
-		if(blur)
-            rt.GetBlur(0.1f, 3);
-    }
+	// // Update is called once per frame
+	// void Update () {
+    //     Graphics.Blit(original, rt, processMat);
+	// 	if(blur)
+    //         rt.GetBlur(0.1f, 3);
+    // }
 }

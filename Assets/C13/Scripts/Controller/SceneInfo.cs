@@ -37,8 +37,9 @@ public class SceneInfo : MonoBehaviour {
         currentCamera = cSetting[index];
         currentCamera.Init();
 	}
-	public void Init(){
-        currentCamera = null;
+	public void Init(SceneInfo preScene){
+		if(preScene != null&&preScene.currentCamera!=null)
+            currentCamera = preScene.currentCamera;
     }
     public void SceneUpdate()
 	{

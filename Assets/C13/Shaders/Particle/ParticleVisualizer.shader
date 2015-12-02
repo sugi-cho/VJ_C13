@@ -131,7 +131,7 @@
 			outSpecSmoothness = half4(0.9,0.9,0.9,0.2);
 			outNormal.xyz = normalize(vNormal.x*i.vRight + vNormal.y*i.vUp + vNormal.z*i.vForward);
 			outNormal = half4(outNormal.xyz*0.5+0.5,1);
-			outEmission = 0;
+			outEmission = pow(r2,10)*outDiffuse*0.5;
 		}
 		// fragment shader for shadow caster
 		fixed4 fragShadow (v2f_shadow i) : SV_Target {

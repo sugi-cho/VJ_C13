@@ -89,8 +89,8 @@ public class Controller : MonoBehaviour {
         particleVisualizer.SetColor("_Col0", scene.col0);
         particleVisualizer.SetColor("_Col1", scene.col1);
 
+        scene.Init(currentScene);
         currentScene = scene;
-        currentScene.Init();
     }
 	void SceneUpdate()
 	{
