@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>Play</string>
 	<key>CFBundleGetInfoString</key>
-	<string>Unity Player version 5.2.2f1 (3757309da7e7). (c) 2015 Unity Technologies ApS. All rights reserved.</string>
+	<string>Unity Player version 5.2.3f1 (f3d16a1fa2dd). (c) 2015 Unity Technologies ApS. All rights reserved.</string>
 	<key>CFBundleIconFile</key>
 	<string>PlayerIcon.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -19,16 +19,16 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>Unity Player version 5.2.2f1</string>
+	<string>Unity Player version 5.2.3f1</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>5.2.2f1</string>
+	<string>5.2.3f1</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>PlayerApplication</string>
 	<key>UnityBuildNumber</key>
-	<string>3757309da7e7</string>
+	<string>f3d16a1fa2dd</string>
 </dict>
 </plist>
