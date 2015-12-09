@@ -520,6 +520,72 @@
 			o.col = col;
 			return o;
 		}
+		pOut emitSquare(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			float life = pos.w;
+			float3 cp = cPos(pos.xyz);
+			float4
+				n1 = tex2D(_NoiseTex, (cp.xy+cp.z)*_Scale),
+				n2 = tex2D(_NoiseTex, (cp.xy+cp.z)*_Scale*2.0),
+				n3 = tex2D(_NoiseTex, (cp.xy+cp.z)*_Scale*4.0),
+				n4 = tex2D(_NoiseTex, (cp.zx+cp.y)*_Scale),
+				n5 = tex2D(_NoiseTex, (cp.zx+cp.y)*_Scale*2.0),
+				n6 = tex2D(_NoiseTex, (cp.zx+cp.y)*_Scale*4.0);
+			float3 
+				curlXY = n1.xyz+n2.xyz*0.5+n3.xyz*0.25,
+				curlZX = n4.xyz+n5.xyz*0.5+n6.xyz*0.25;
+			
+			float3 emitPos = (half3(i.uv.x,-25,i.uv.y)-0.5)*0.1 + 5.0*half3(sin(_Time.y*0.1),0,cos(_Time.y*0.1));
+			
+			if(life<0){
+				life -= unity_DeltaTime.x;
+				float r = rand(i.uv+_Time.xy)+rand(i.uv.yx+_Time.yx)/256;
+				if(r*frac(life) < 20000*unity_DeltaTime.x/_Pos_TexelSize.z/_Pos_TexelSize.z){
+					pos.xyz = emitPos;
+					vel.xyz = half3(0,100*(1-distance(i.uv,0.5)),0);
+					col = half4(0,1,0,1);
+					life = _Life*(0.6+0.4*i.uv.x);
+				}
+			}
+			else{
+				life -= unity_DeltaTime.x;
+				vel.xy += curlXY.xy;
+				vel.zx += curlZX.xy;
+				vel.y -= 9.8 * unity_DeltaTime.x;
+				
+				if(pos.x < -7.5 || 7.5 < pos.x){
+					vel.x *= -1;
+					pos.x = max(-7.5,min(pos.x,7.5));
+					life -= 1;
+					col = half4(1,0,0,1);
+				}
+				if(pos.z < -7.5 || 7.5 < pos.z){
+					vel.z *= -1;
+					pos.z = max(-7.5,min(pos.z,7.5));
+					life -= 1;
+					col = half4(0,0,1,1);
+				}
+				if(pos.y < -2.5 || 11.5 < pos.y){
+					vel.y *= -1;
+					pos.y = max(-2.5,min(pos.y,11.5));
+					life -= 1;
+					col = half4(0,1,0,1);
+				}
+				pos.xyz += vel.xyz*unity_DeltaTime.x*_Speed*(0.9+0.1*(rand(i.uv.xy+_Time.y)+rand(i.uv.yx+_Time.y)/256))*saturate(life*0.1);
+				
+				col = lerp(col,half4(0.5,0.5,0.5,1),unity_DeltaTime.x);
+				vel.xyz *= 1-unity_DeltaTime.x*0.5;
+			}
+			
+			pOut o;
+			o.vel = vel;
+			o.pos = half4(pos.xyz,life);
+			o.col = col;
+			return o;
+		}
 	ENDCG
 	SubShader
 	{
@@ -626,6 +692,14 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment kieru
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//13
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment emitSquare
 			#pragma target 3.0
 			ENDCG
 		}

@@ -119,19 +119,19 @@
 			
 			half4 vPos = half4(i.vCenter.xyz+vNormal*_Size, 1.0);
 			half4 cPos = mul(UNITY_MATRIX_P, vPos);
-			#if defined(SHADER_TARGET_GLSL)
-				outDepth = (cPos.z/cPos.w) * 0.5 + 0.5;
-			#else
+			#if defined(SHADER_API_D3D11)
 				outDepth = cPos.z/cPos.w;
+			#else
+				outDepth = (cPos.z/cPos.w) * 0.5 + 0.5;
 			#endif
 			if(outDepth <= 0)
 				discard;
 			
 			outDiffuse = i.color;
-			outSpecSmoothness = half4(0.9,0.9,0.9,0.2);
+			outSpecSmoothness = 0;//half4(0.9,0.9,0.9,0.2);
 			outNormal.xyz = normalize(vNormal.x*i.vRight + vNormal.y*i.vUp + vNormal.z*i.vForward);
 			outNormal = half4(outNormal.xyz*0.5+0.5,1);
-			outEmission = pow(r2,10)*outDiffuse*0.5;
+			outEmission = pow(r2,10)*outDiffuse*0.25;
 		}
 		// fragment shader for shadow caster
 		fixed4 fragShadow (v2f_shadow i) : SV_Target {
