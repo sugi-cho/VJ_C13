@@ -546,7 +546,6 @@
 				if(r*frac(life) < 20000*unity_DeltaTime.x/_Pos_TexelSize.z/_Pos_TexelSize.z){
 					pos.xyz = emitPos;
 					vel.xyz = half3(0,100*(1-distance(i.uv,0.5)),0);
-					col = half4(0,1,0,1);
 					life = _Life*(0.6+0.4*i.uv.x);
 				}
 			}
@@ -560,30 +559,26 @@
 					vel.x *= -1;
 					pos.x = max(-7.5,min(pos.x,7.5));
 					life -= 1;
-					col = half4(1,0,0,1);
 				}
 				if(pos.z < -7.5 || 7.5 < pos.z){
 					vel.z *= -1;
 					pos.z = max(-7.5,min(pos.z,7.5));
 					life -= 1;
-					col = half4(0,0,1,1);
 				}
 				if(pos.y < -2.5 || 11.5 < pos.y){
 					vel.y *= -1;
 					pos.y = max(-2.5,min(pos.y,11.5));
 					life -= 1;
-					col = half4(0,1,0,1);
 				}
 				pos.xyz += vel.xyz*unity_DeltaTime.x*_Speed*(0.9+0.1*(rand(i.uv.xy+_Time.y)+rand(i.uv.yx+_Time.y)/256))*saturate(life*0.1);
-				
-				col = lerp(col,half4(0.5,0.5,0.5,1),unity_DeltaTime.x);
+
 				vel.xyz *= 1-unity_DeltaTime.x*0.5;
 			}
 			
 			pOut o;
 			o.vel = vel;
 			o.pos = half4(pos.xyz,life);
-			o.col = col;
+			o.col = 1;
 			return o;
 		}
 	ENDCG

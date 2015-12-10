@@ -3,8 +3,6 @@
 	Properties
 	{
 		_Size ("size", Float) = 0.1
-		_Col0 ("first color", Color) = (0,0.5,1,1)
-		_Col1 ("die color", Color) = (1,1,1,1)
 	}
 	CGINCLUDE
 		#include "UnityCG.cginc"
@@ -128,7 +126,7 @@
 				discard;
 			
 			outDiffuse = i.color;
-			outSpecSmoothness = 0;//half4(0.9,0.9,0.9,0.2);
+			outSpecSmoothness = half4(0.8,0.8,0.8,0.8);
 			outNormal.xyz = normalize(vNormal.x*i.vRight + vNormal.y*i.vUp + vNormal.z*i.vForward);
 			outNormal = half4(outNormal.xyz*0.5+0.5,1);
 			outEmission = pow(r2,10)*outDiffuse*0.25;
