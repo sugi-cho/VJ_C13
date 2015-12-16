@@ -38,6 +38,7 @@ public class MultiRenderTexture : MonoBehaviour
 		dRt.filterMode = util.filterMode;
 		dRt.wrapMode = util.wrapMode;
 		dRt.name = "DepthTexture";
+		dRt.Create();
 
 		for (var i = 0; i<initRenderPasses.Length; i++)
 			Render (initRenderPasses [i]);
@@ -68,6 +69,7 @@ public class MultiRenderTexture : MonoBehaviour
 			rts [i].filterMode = util.filterMode;
 			rts [i].wrapMode = util.wrapMode;
 			rts [i].name = name;
+			rts [i].Create();
 		}
 		return rts;
 	}

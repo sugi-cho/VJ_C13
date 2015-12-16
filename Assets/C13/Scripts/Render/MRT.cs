@@ -38,20 +38,22 @@ public class MRT : MonoBehaviour
 		}
 		dRt = new RenderTexture ((int)cam.pixelWidth, (int)cam.pixelHeight, 24, RenderTextureFormat.Depth);
 		dRt.name = depthBufferName;
-		
-		cam.SetTargetBuffers (buffers, dRt.depthBuffer);
+        dRt.Create();
+
+        cam.SetTargetBuffers (buffers, dRt.depthBuffer);
 	}
 	void OnDestroy ()
 	{
 		ReleaseRenderTextures ();
-	}
+		foreach(var output in outputs)
+            output.Release();
+    }
 
 	void ReleaseRenderTextures ()
 	{
 		for (int i = 0; i < rts.Length; i++) 
 			Extensions.ReleaseRenderTexture (rts [i]);
 		Extensions.ReleaseRenderTexture (dRt);
-//		Extensions.ReleaseRenderTexture (output);
 	}
 	
 	void OnPreRender ()
@@ -66,7 +68,6 @@ public class MRT : MonoBehaviour
 		Graphics.SetRenderTarget (null);
 		foreach (var output in outputs)
 			output.Render (rts, dRt);
-
 	}
 
 	void OnGUI ()
@@ -92,8 +93,12 @@ public class MRT : MonoBehaviour
 			output = new RenderTexture (Screen.width, Screen.height, 24, RenderTextureFormat.ARGBFloat);
 			output.wrapMode = TextureWrapMode.Repeat;
 			output.name = propName;
-			Shader.SetGlobalTexture (output.name, output);
+            output.Create();
+            Shader.SetGlobalTexture (output.name, output);
 		}
+		public void Release(){
+            Extensions.ReleaseRenderTexture(output);
+        }
 		public void Render (RenderTexture[] rts, RenderTexture dRt)
 		{
 			if (output == null)
