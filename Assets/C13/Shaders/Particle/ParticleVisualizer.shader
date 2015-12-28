@@ -106,7 +106,7 @@
 			out half4 outSpecSmoothness : SV_Target1,
 			out half4 outNormal : SV_Target2,
 			out half4 outEmission : SV_Target3,
-			out half outDepth : SV_Depth) 
+			out half outDepth : SV_Depth)
 		{
 			half3 vNormal;
 			vNormal.xy = i.uv*2.0-1.0;
@@ -129,7 +129,7 @@
 			outSpecSmoothness = half4(0.8,0.8,0.8,0.8);
 			outNormal.xyz = normalize(vNormal.x*i.vRight + vNormal.y*i.vUp + vNormal.z*i.vForward);
 			outNormal = half4(outNormal.xyz*0.5+0.5,1);
-			outEmission = pow(r2,10)*outDiffuse*0.25;
+			outEmission = saturate(pow(r2,10)*outDiffuse*0.1);
 		}
 		// fragment shader for shadow caster
 		fixed4 fragShadow (v2f_shadow i) : SV_Target {

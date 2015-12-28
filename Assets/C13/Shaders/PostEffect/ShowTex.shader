@@ -23,12 +23,12 @@
 			return o;
 		}
 		
-		uniform sampler2D _CompTex,_FlowTex;
+		uniform sampler2D _SyphonFlow;
 		sampler2D _MainTex;
 
 		half4 frag (v2f i) : SV_Target
 		{
-			half4 col = tex2D(_CompTex, i.uv);
+			half4 col = tex2D(_SyphonFlow, i.uv);
 			return col;
 		}
 	ENDCG

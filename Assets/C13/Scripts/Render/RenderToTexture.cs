@@ -16,7 +16,8 @@ public class RenderToTexture : MonoBehaviour
 	public int
 		bItr = 3,
 		bDS = 1;
-	
+	public TextureWrapMode wrapMode;
+
 	[SerializeField]
 	RenderTexture[]
 		rts = new RenderTexture[2];
@@ -27,10 +28,10 @@ public class RenderToTexture : MonoBehaviour
 		if (initEffect != null)
 			BlitEffect (initEffect);
 	}
-	
+
 	void Update ()
 	{
-		foreach (var effect in effects) 
+		foreach (var effect in effects)
 			BlitEffect (effect);
 		
 		var output = rts [0];
@@ -44,22 +45,24 @@ public class RenderToTexture : MonoBehaviour
 		Graphics.Blit (rts [0], rts [1], effect);
 		SwapRTs ();
 	}
-	
+
 	void CreateRTs ()
 	{
 		if (rts [0] == null) {
-			for (var i = 0; i<rts.Length; i++) 
+			for (var i = 0; i < rts.Length; i++) {
 				rts [i] = Extensions.CreateRenderTexture (texSize, texSize, rts [i]);
+				rts [i].wrapMode = wrapMode;
+			}
 		}
 	}
-	
+
 	void SwapRTs ()
 	{
 		var tmp = rts [0];
 		rts [0] = rts [1];
 		rts [1] = tmp;
 	}
-	
+
 	void OnDisabled ()
 	{
 		foreach (var rt in rts)
