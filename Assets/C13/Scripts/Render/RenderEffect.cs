@@ -21,12 +21,19 @@ public class RenderEffect : MonoBehaviour
 		output;
 	RenderTexture[]
 		rts = new RenderTexture[2];
+
 	void Start ()
 	{
 		if (blur)
 			bSize *= (float)Screen.height / (float)bHeight;
 	}
-	
+
+	void Update ()
+	{
+		if (Input.GetKeyDown (KeyCode.Alpha6))
+			show = !show;
+	}
+
 	void OnRenderImage (RenderTexture s, RenderTexture d)
 	{
 		CheckRTs (s);
@@ -45,11 +52,11 @@ public class RenderEffect : MonoBehaviour
 		else
 			Graphics.Blit (s, d);
 	}
-	
+
 	void CheckRTs (RenderTexture s)
 	{
 		if (rts [0] == null || rts [0].width != s.width || rts [0].height != s.height) {
-			for (var i = 0; i<rts.Length; i++) {
+			for (var i = 0; i < rts.Length; i++) {
 				var rt = rts [i];
 				rts [i] = Extensions.CreateRenderTexture (s, rt);
 				rts [i].wrapMode = wrapMode;
@@ -58,14 +65,14 @@ public class RenderEffect : MonoBehaviour
 			output.wrapMode = wrapMode;
 		}
 	}
-	
+
 	void SwapRTs ()
 	{
 		var tmp = rts [0];
 		rts [0] = rts [1];
 		rts [1] = tmp;
 	}
-	
+
 	void OnDisabled ()
 	{
 		foreach (var rt in rts)

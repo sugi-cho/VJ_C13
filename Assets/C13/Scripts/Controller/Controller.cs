@@ -10,14 +10,18 @@ public class Controller : MonoBehaviour
 		noiseGenerator;
 	public KeyCode
 		selectSpecialKey,
-		button0,
-		button1,
-		button2,
-		button3,
-		camButton0,
-		camButton1,
-		camButton2,
-		camButton3,
+		button0 = KeyCode.Alpha1,
+		button1 = KeyCode.Alpha2,
+		button2 = KeyCode.Alpha3,
+		button3 = KeyCode.Alpha4,
+		button4 = KeyCode.Alpha5,
+		button5 = KeyCode.Alpha6,
+		button6 = KeyCode.Alpha7,
+		button7 = KeyCode.Alpha8,
+		camButton0 = KeyCode.W,
+		camButton1 = KeyCode.D,
+		camButton2 = KeyCode.S,
+		camButton3 = KeyCode.A,
 		focusIn,
 		focusOut,
 		brakeKey,
@@ -30,6 +34,8 @@ public class Controller : MonoBehaviour
 
 	[SerializeField]
 	SceneInfo currentScene;
+	[SerializeField]
+	float drag;
 
 	public MultiRenderTexture mrtex {
 		get {
@@ -65,9 +71,7 @@ public class Controller : MonoBehaviour
 	void Update ()
 	{
 		SelectScene ();
-		if (currentScene != null)
-			SceneUpdate ();
-		var drag = Input.GetKey (brakeKey) ? minDrag : maxDrag;
+		drag = Input.GetKey (brakeKey) ? maxDrag : minDrag;
 		drag = Mathf.Exp (-drag * Time.deltaTime);
 		Shader.SetGlobalFloat (propDrag, drag);
 		Time.timeScale = Input.GetKey (slowKey) ? 0.2f : Mathf.Lerp (Time.timeScale, 1f, 0.03f);

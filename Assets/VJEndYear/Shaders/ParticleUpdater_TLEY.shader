@@ -18,6 +18,7 @@
 		#define Cam2R _Cam2_W2C[0].xyz
 		#define Cam2U _Cam2_W2C[1].xyz
 		#define Cam2F _Cam2_W2C[2].xyz
+		#define ITR 3
 
 		struct appdata
 		{
@@ -43,14 +44,17 @@
 			_Vel,
 			_Pos,
 			_Col,
-			_FlowTex;
+			_FlowTex,
+			_SyphonFlow,
+			_SyphonTex;
 		half4 _Pos_TexelSize;
 		
 		uniform float4x4 _Cam1_W2C, _Cam1_W2S, _Cam1_S2C, _Cam1_C2W;
 		uniform float4x4 _Cam2_W2C, _Cam2_W2S, _Cam2_S2C, _Cam2_C2W;
 		uniform float4 _Cam1_SParams, _Cam1_PParams;
 		uniform float4 _Cam2_SParams, _Cam2_PParams;
-		
+
+		uniform float2 _Field;
 		uniform float _MRT_TexSize,_Drag;
 		float _Scale, _Speed, _Life, _EmitRate,_FocalLength;
 		
@@ -128,12 +132,70 @@
 		    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
 		    return lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y) * c.z;
 		}
+		half3 curl3d(half3 pos){
+			
+			half2
+				xy = tex2D(_NoiseTex, pos.xy + pos.z).xy,
+				zx = tex2D(_NoiseTex, pos.zx + pos.y).xy;
+			half3 c3d = 0;
+			c3d.xy += xy;
+			c3d.zx += zx;
+			return c3d;
+		}
+		pOut createPOut(v2f i){
+			float4
+				vel = tex2D(_Vel, i.uv),
+				pos = tex2D(_Pos, i.uv),
+				col = tex2D(_Col, i.uv);
+			pOut o;
+			o.vel = vel;
+			o.pos = pos;
+			o.col = col;
+			return o;
+		}
+		pOut lifeSpan(pOut o){
+			o.pos.w -= unity_DeltaTime.x;
+			return o;
+		}
+		pOut baseUpdate(pOut o){
+			o.pos.xyz += o.vel.xyz*unity_DeltaTime.x;
+			o.vel.xyz *= _Drag;
+			return o;
+		}
+		pOut loopInField(pOut o){
+			o.pos.xyz = (frac((o.pos.xyz+_Field.x)*_Field.y*0.5)-0.5)*_Field.x*2;
+			return o;
+		}
+		pOut worldCurl(pOut o){
+			half scale = _Scale;
+			half speed = _Speed;
+
+			for(int i = 0; i < ITR; i++){
+				o.vel.xyz += curl3d(o.pos.xyz*scale)*speed*unity_DeltaTime.x;
+				scale *= 2.0;
+				speed *= 0.5;
+			}
+
+			return o;
+		}
+		pOut emitFromTex(v2f i, pOut o){
+			float x = rand(i.uv + _Time.y) + rand(i.uv.yx + _Time.y)*0.004;
+			float y = rand(i.uv.yx + _Time.y *2 ) + rand(i.uv + _Time.y*2)*0.004;
+			float2 uv = float2(x,y);
+			float tex = tex2D(_SyphonFlow, uv).b;
+			float4 col = tex2D(_SyphonTex, uv);
+			if(rand(uv)+rand(uv.yx)*0.004*frac(o.pos.w) < unity_DeltaTime.x*_Pos_TexelSize.x/_Pos_TexelSize.x){
+				o.pos = half4(fullPos(uv, _Field*(1-tex*0.5)),10);
+				o.col = 5*col*col;
+			}
+			return o;
+		}
 		pOut fragInit (v2f i)
 		{
 			pOut o;
 			o.vel = 0;
-			o.pos = float4(fullPos(i.uv,10), -_Life*((rand(i.uv.yx)+rand(i.uv.xy)/256)+1));
-			o.col = 0;
+			o.pos = float4(fullPos2(i.uv,_Field), 1);
+			o.col = 1;
 			return o;
 		}
 		pOut takiEmitter(v2f i)
@@ -427,13 +489,13 @@
 			to.z = floor(i.uv.x*10.0)/10.0+floor(i.uv.y*10.0);
 			to -= 5.0;
 			to = normalize(to)*max(abs(to.x),max(abs(to.y),abs(to.z)));
+			to *= 0.4;
 			to = rotateAngleAxis(to,float3(1.0,2.0,3.0),0.1*_Time.y*UNITY_PI);
 			
 			vel.xyz += to.xyz - pos.xyz;
-			
-			col.rgb = 1+vel.xyz;
+
 			pos.xyz += vel.xyz * unity_DeltaTime.x;
-			vel.xyz *= 1-unity_DeltaTime.x;
+			vel.xyz *= _Drag;
 			life = _Life*((rand(i.uv.yx)+rand(i.uv.xy)/256)+1);
 			
 			pOut o;
@@ -449,7 +511,7 @@
 				col = tex2D(_Col, i.uv);
 			float life = pos.w;
 			
-			float3 center = fullPos(float2(0.5,0.5), _FocalLength);
+			float3 center = fullPos(float2(0.5,0.5), _Field*0.5);
 			float3 sphere = float3(
 				frac(i.uv.x*10),
 				frac(i.uv.y*10),
@@ -527,12 +589,12 @@
 			float life = pos.w;
 			float3 cp = cPos(pos.xyz);
 			float4
-				n1 = tex2D(_NoiseTex, (cp.xy+cp.z)*_Scale),
-				n2 = tex2D(_NoiseTex, (cp.xy+cp.z)*_Scale*2.0),
-				n3 = tex2D(_NoiseTex, (cp.xy+cp.z)*_Scale*4.0),
-				n4 = tex2D(_NoiseTex, (cp.zx+cp.y)*_Scale),
-				n5 = tex2D(_NoiseTex, (cp.zx+cp.y)*_Scale*2.0),
-				n6 = tex2D(_NoiseTex, (cp.zx+cp.y)*_Scale*4.0);
+				n1 = tex2D(_NoiseTex, (pos.xy+pos.z)*_Scale),
+				n2 = tex2D(_NoiseTex, (pos.xy+pos.z)*_Scale*2.0),
+				n3 = tex2D(_NoiseTex, (pos.xy+pos.z)*_Scale*4.0),
+				n4 = tex2D(_NoiseTex, (pos.zx+pos.y)*_Scale),
+				n5 = tex2D(_NoiseTex, (pos.zx+pos.y)*_Scale*2.0),
+				n6 = tex2D(_NoiseTex, (pos.zx+pos.y)*_Scale*4.0);
 			float3 
 				curlXY = n1.xyz+n2.xyz*0.5+n3.xyz*0.25,
 				curlZX = n4.xyz+n5.xyz*0.5+n6.xyz*0.25;
@@ -542,7 +604,7 @@
 			if(life<0){
 				life -= unity_DeltaTime.x;
 				float r = rand(i.uv+_Time.xy)+rand(i.uv.yx+_Time.yx)/256;
-				if(r*frac(life) < 20000*unity_DeltaTime.x/_Pos_TexelSize.z/_Pos_TexelSize.z){
+				if(r*frac(life) < 20000*unity_DeltaTime.x*_Pos_TexelSize.x/_Pos_TexelSize.x){
 					pos.xyz = emitPos;
 					vel.xyz = half3(0,100*(1-distance(i.uv,0.5)),0);
 					life = _Life*(0.6+0.4*i.uv.x);
@@ -578,6 +640,32 @@
 			o.vel = vel;
 			o.pos = half4(pos.xyz,life);
 			o.col = 1;
+			return o;
+		}
+		pOut basic(v2f i){
+			pOut o = createPOut(i);
+			if(0<o.pos.w){
+				o = worldCurl(o);
+				o = baseUpdate(o);
+				o = loopInField(o);
+				o.pos.z -= unity_DeltaTime.x*0.3;
+				o.pos.w = 1;
+			}
+			else{
+				o = fragInit(i);
+			}
+			return o;
+		}
+		pOut emitTex(v2f i){
+			pOut o = createPOut(i);
+			if(o.pos.w < 0)
+				o = emitFromTex(i,o);
+			else{
+				float2 uv = sUV(o.pos.xyz);
+				float v = tex2D(_SyphonFlow,uv).b;
+				o.pos.w -= (1-v);
+			}
+			o = lifeSpan(o);
 			return o;
 		}
 	ENDCG
@@ -694,6 +782,22 @@
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment emitSquare
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass//14
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment basic
+			#pragma target 3.0
+			ENDCG
+		}
+		Pass
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment emitTex
 			#pragma target 3.0
 			ENDCG
 		}
